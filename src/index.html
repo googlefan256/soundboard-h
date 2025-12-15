@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>サウンドボード</title>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --active-color: #ec4899;
+            --bg-color: #f8fafc;
+            --btn-bg: #ffffff;
+            --text-color: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 40px 20px;
+            touch-action: manipulation;
+            color: var(--text-color);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 40px;
+            letter-spacing: -0.025em;
+        }
+
+        #sound-grid {
+            display: grid;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+            gap: 16px;
+            padding-bottom: 40px;
+        }
+
+        @media (min-width: 560px) {
+            #sound-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 768px) {
+            #sound-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
+        .sound-btn {
+            background-color: var(--btn-bg);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 20px;
+            padding: 24px;
+            height: 160px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .sound-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+        }
+
+        .sound-btn:active {
+            transform: scale(0.95);
+        }
+
+        .sound-btn.playing {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .sound-btn>* {
+            position: relative;
+            z-index: 2;
+            transition: color 0.2s ease;
+        }
+
+        .sound-btn span {
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.4;
+            margin-top: 12px;
+        }
+
+        .icon {
+            font-size: 2rem;
+            opacity: 0.7;
+            transition: transform 0.3s ease;
+        }
+
+        .sound-btn:hover .icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .sound-btn.playing .icon {
+            transform: scale(1.2);
+            color: var(--primary-color);
+            opacity: 1;
+        }
+
+        .sound-btn.playing span {
+            color: var(--primary-color);
+        }
+
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: var(--primary-color);
+            opacity: 0.08;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .progress-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            width: 0%;
+            background: var(--primary-color);
+            z-index: 2;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>サウンドボード</h1>
+    <div id="sound-grid"></div>
+
+    <script>
+        const soundData = {
+            "/assets/horse.mp3": "馬の鳴き声",
+            "/assets/cat.mp3": "猫のあいさつ",
+            "/assets/dog.wav": "犬の遠吠え",
+            "/assets/bell.mp3": "学校のチャイム",
+            "/assets/drum.mp3": "ドラムロール",
+            "/assets/buzzer.mp3": "不正解ブザー"
+        };
+
+        Object.keys(soundData).forEach(path => {
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = path;
+            document.head.appendChild(link);
+        });
+
+        const grid = document.getElementById('sound-grid');
+
+        Object.entries(soundData).forEach(([path, label]) => {
+            const btn = document.createElement('button');
+            btn.className = 'sound-btn';
+
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            btn.appendChild(progressBar);
+            const progressLine = document.createElement('div');
+            progressLine.className = 'progress-line';
+            btn.appendChild(progressLine);
+
+            const icon = document.createElement('div');
+            icon.className = 'icon';
+            icon.textContent = '♪';
+            btn.appendChild(icon);
+
+            const span = document.createElement('span');
+            span.textContent = label;
+            btn.appendChild(span);
+
+            btn.addEventListener('click', () => {
+                playSound(path, btn);
+            });
+
+            grid.appendChild(btn);
+        });
+
+        function playSound(path, btnElement) {
+            if (btnElement._activeAudio) {
+                btnElement._activeAudio.pause();
+                btnElement._activeAudio = null;
+            }
+            if (btnElement._animFrame) {
+                cancelAnimationFrame(btnElement._animFrame);
+                btnElement._animFrame = null;
+            }
+
+            const audio = new Audio(path);
+            btnElement._activeAudio = audio;
+
+            const progressBar = btnElement.querySelector('.progress-bar');
+            const progressLine = btnElement.querySelector('.progress-line');
+
+            btnElement.classList.add('playing');
+            progressBar.style.width = '0%';
+            progressLine.style.width = '0%';
+
+            audio.play().catch(e => {
+                console.error("再生エラー:", e);
+                resetButton(btnElement);
+            });
+
+            const updateProgress = () => {
+                if (!btnElement._activeAudio || btnElement._activeAudio.paused) return;
+
+                const duration = audio.duration;
+                const currentTime = audio.currentTime;
+
+                if (duration > 0) {
+                    const percent = (currentTime / duration) * 100;
+                    progressBar.style.width = `${percent}%`;
+                    progressLine.style.width = `${percent}%`;
+                }
+
+                btnElement._animFrame = requestAnimationFrame(updateProgress);
+            };
+
+            btnElement._animFrame = requestAnimationFrame(updateProgress);
+
+            audio.onended = () => {
+                resetButton(btnElement);
+            };
+
+            audio.onpause = () => {
+            };
+        }
+
+        function resetButton(btnElement) {
+            btnElement.classList.remove('playing');
+            const progressBar = btnElement.querySelector('.progress-bar');
+            const progressLine = btnElement.querySelector('.progress-line');
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressLine) progressLine.style.width = '0%';
+
+            if (btnElement._animFrame) {
+                cancelAnimationFrame(btnElement._animFrame);
+                btnElement._animFrame = null;
+            }
+            btnElement._activeAudio = null;
+        }
+    </script>
+</body>
+
+</html>
