@@ -195,10 +195,12 @@
             if (btnElement._activeAudio) {
                 btnElement._activeAudio.pause();
                 btnElement._activeAudio = null;
-            }
-            if (btnElement._animFrame) {
-                cancelAnimationFrame(btnElement._animFrame);
-                btnElement._animFrame = null;
+                if (btnElement._animFrame) {
+                    cancelAnimationFrame(btnElement._animFrame);
+                    btnElement._animFrame = null;
+                }
+                resetButton(btnElement);
+                return;
             }
 
             const audio = new Audio(path);
