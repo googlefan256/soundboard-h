@@ -13,9 +13,9 @@ def edit_sound(f: str, reduction: int):
     print(f"完了しました: ./src/assets/{f} が作成されました")
 
 def main():
-    edit_sound("suho-medium.mp3", 3)
-    edit_sound("drive-medium.mp3", 0)
-    edit_sound("horse.mp3", 15)
+    edit_sound("suho-medium.mp3", -3)
+    edit_sound("drive-medium.mp3", -6)
+    edit_sound("horse.mp3", 9)
 
 if __name__ == "__main__":
     main()
